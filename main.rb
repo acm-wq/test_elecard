@@ -1,11 +1,11 @@
 require 'net/http'
 require 'json'
-require 'ostruct'
+require 'dotenv/load'
 
 # Работа с API
 class APIClient
   API_URL = 'http://contest.elecard.ru/api'
-  API_KEY = '+VD53Of/6SJg7XKjhMZf0ErwlklaIVJZUzeWQZOQT3717WkKhGGER43sst3c1nxTMhnhxJsWzP8gLl/Wfjs+eg=='
+  API_KEY = ENV['ELECARD_API_KEY']
 
   # Метод для отправки запросов на сервер
   # Принимает метод и параметры, формирует запрос и отправляет его
@@ -14,7 +14,13 @@ class APIClient
     body = { key: API_KEY, method:, params: }.to_json
     uri = URI(API_URL)
     response = Net::HTTP.post(uri, body, { 'Content-Type' => 'application/json' })
-    JSON.parse(response.body)['result']
+    result = JSON.parse(response.body)
+
+    if result['error']
+      raise "API Error: #{result['error']}"
+    else
+      result['result']
+    end
   end
 end
 
@@ -43,6 +49,8 @@ class ElecardTest
     @tasks = APIClient.request(method: 'GetTasks', params: {})
     @results = ResultCalculator.calculate_results(@tasks)
     check_results
+  rescue StandardError => e
+    puts "Ошибка: #{e.message}"
   end
 
   private
